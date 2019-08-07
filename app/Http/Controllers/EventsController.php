@@ -166,7 +166,7 @@ class EventsController extends Controller
     }
 
 //    Allow admin or owner of event to view event invitees
-    public function eventusers($event_id)
+    public function viewUsersOfEvent($event_id)
     {
         $event = Event::findOrFail($event_id);
         $this->authorize('view',$event);
@@ -175,7 +175,7 @@ class EventsController extends Controller
     }
 
 //    Allow event owner to invite other users to event
-    public function invite(Request $request, $id)
+    public function inviteUsers(Request $request, $id)
     {
         $event = Event::findOrFail($id);
         $this->authorize('update',$event);

@@ -19,13 +19,13 @@ Route::middleware('auth.basic')->get('/user', function (Request $request) {
 });
 
 //    View all the events a particular user has been invited to
-Route::get('users/events','UsersController@userevents');
+Route::get('users/events','UsersController@viewEventsOfUser');
 
 //    Allow admin or owner of event to view event invitees
-Route::get('events/{events_id}/users','EventsController@eventusers');
+Route::get('events/{events_id}/users','EventsController@viewUsersOfEvent');
 
 //    Allow event owner to invite other users to event
-Route::post('events/{id}/invite','EventsController@invite');
+Route::post('events/{id}/invite','EventsController@inviteUsers');
 
 //    Allow user to accept an invitation
 //Route::get('/event/{id}/accept','UsersController@accept');
@@ -40,7 +40,7 @@ Route::patch('/events','UsersController@respondToInvitation');
 Route::get('/event/{id}/cancel','EventsController@cancel');
 
 //    Show all the invitation statuses of a particular event
-Route::get('status/{event_id}','StatusesController@showeventstatus');
+Route::get('status/{event_id}','StatusesController@showStatusesOfEventInvitation');
 
 //    URIs for resources
 Route::apiResource('/users','UsersController');

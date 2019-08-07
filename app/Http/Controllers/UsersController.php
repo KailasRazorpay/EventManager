@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use App\User;
 use App\Event;
+use App\Status;
 use App\Mail\Email;
 
 class UsersController extends Controller
@@ -50,15 +52,25 @@ class UsersController extends Controller
 //    Allow new users to create account
     public function store(Request $request)
     {
-        $user = new User;
         $attributes = $request->validate([
             'name' =>'required',
             'email' =>'required',
             'password'=>'required'
         ]);
         $attributes['password'] = bcrypt($attributes['password']);
-        $user->create($attributes);
-//        Send email to user confirming account creation
+        try
+        {
+            User::create($attributes);
+        }
+        catch(QueryException $exception)
+        {
+            $errorInfo = $exception->errorInfo;
+            if($errorInfo[0] == "23000")
+            {
+                $error_message = "A user with the same email id already exists";
+            }
+            return response()->json($error_message);
+        }
         $message = 'Your user account has been created';
         \Mail::to($attributes['email'])->send(new Email($message));
 
@@ -105,15 +117,27 @@ class UsersController extends Controller
     {
         //
         $this->authorize('update',$user);
-        $user = User::find($id);
+//        $user = User::find($id);
         $attributes = $request->validate([
             'name' =>'required',
             'email' =>'required',
             'password'=>'required'
         ]);
         $attributes['password'] = bcrypt($attributes['password']);
-        $user->update($attributes);
-//        Send email to the user who updated his credentials
+        try
+        {
+            User::update($attributes);
+        }
+        catch(QueryException $exception)
+        {
+            $errorInfo = $exception->errorInfo;
+            if($errorInfo[0] == "23000")
+            {
+                $error_message = "A user with the same email id already exists";
+            }
+            return response()->json($error_message);
+        }
+//          Send email to the user who updated his credentials
         $message = 'You have updated your information';
         \Mail::to($attributes['email'])->send(new Email($message));
 
@@ -132,6 +156,15 @@ class UsersController extends Controller
         //
         $user = User::find($id);
         $this->authorize('delete',$user);
+        $statuses = Status::all();
+//        Delete all invitations for the user
+        foreach($statuses as $status)
+        {
+            if($status->user_id == $id)
+            {
+                $status->delete();
+            }
+        }
         $user->delete();
 //        Send email to the user whose account ha been deleted
         $message = 'Your account has been deleted';
@@ -139,7 +172,7 @@ class UsersController extends Controller
     }
 
 //    View all the events a particular user has been invited to
-    public function userevents()
+    public function viewEventsOfUser()
     {
         $user_id = auth()->id();
         $user = User::findOrFail($user_id);
@@ -148,45 +181,45 @@ class UsersController extends Controller
     }
 
 //    Allow user to accept an invitation
-    public function accept($id)
-    {
-        $event = Event::findorFail($id);
-        $user_id = auth()->id();
-        echo $user_id;
-        $user = $event->users()->where('user_id',$user_id)->get()->first();
-        if(count($user))
-        {
-            $user->pivot->status = 1;
-            $user->pivot->save();
-//            Send mail to user confirming his acceptance
-            $message = 'You have accepted the invitaiton';
-            \Mail::to($user)->send(new Email($message));
-        }
-        else
-        {
-            return response("Not invited to event",403);
-        }
-    }
+//    public function accept($id)
+//    {
+//        $event = Event::findorFail($id);
+//        $user_id = auth()->id();
+//        echo $user_id;
+//        $user = $event->users()->where('user_id',$user_id)->get()->first();
+//        if(count($user))
+//        {
+//            $user->pivot->status = 1;
+//            $user->pivot->save();
+////            Send mail to user confirming his acceptance
+//            $message = 'You have accepted the invitaiton';
+//            \Mail::to($user)->send(new Email($message));
+//        }
+//        else
+//        {
+//            return response("Not invited to event",403);
+//        }
+//    }
 
 //    Allow user to reject an invitation
-    public function reject($id)
-    {
-        $event = Event::findOrFail($id);
-        $user_id = auth()->id();
-        $user = $event->users()->where('user_id',$user_id)->get()->first();
-        if(count($user))
-        {
-            $user->pivot->status = 2;
-            $user->pivot->save();
-//            Send email to user confirming his rejection
-            $message = 'You have rejected the invitation';
-            \Mail::to($user)->send(new Email($message));
-        }
-        else
-        {
-            return response("Not invited to event",403);
-        }
-    }
+//    public function reject($id)
+//    {
+//        $event = Event::findOrFail($id);
+//        $user_id = auth()->id();
+//        $user = $event->users()->where('user_id',$user_id)->get()->first();
+//        if(count($user))
+//        {
+//            $user->pivot->status = 2;
+//            $user->pivot->save();
+////            Send email to user confirming his rejection
+//            $message = 'You have rejected the invitation';
+//            \Mail::to($user)->send(new Email($message));
+//        }
+//        else
+//        {
+//            return response("Not invited to event",403);
+//        }
+//    }
 
     public function respondToInvitation(Request $request)
     {

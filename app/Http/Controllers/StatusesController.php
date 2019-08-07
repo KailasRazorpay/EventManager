@@ -96,18 +96,9 @@ class StatusesController extends Controller
     }
 
 //    Show all the invitation statuses of a particular event
-    public function showeventstatus($event_id)
+    public function showStatusesOfEventInvitation($event_id)
     {
-        $event = Event::find($event_id);
-        foreach($event->users as $user)
-        {
-            $status = $user->pivot;
-            if($status->user_id == auth()->id())
-            {
-                return response()->json($status);
-            }
-        }
-        $message = 'You have not been invited to this event';
-        return response()->json($message);
+        $statuses = Status::all()->where('event_id',$event_id);
+        return response()->json($statuses);
     }
 }
