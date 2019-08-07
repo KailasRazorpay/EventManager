@@ -188,4 +188,29 @@ class UsersController extends Controller
         }
     }
 
+    public function respondToInvitation(Request $request)
+    {
+        $id = $request->event_id;
+        $status = $request->status;
+        if($status != 1 and $status != 2)
+        {
+            return response()->json("Not valid status code", 403);
+        }
+        $event = Event::findOrFail($id);
+        $user_id = auth()->id();
+        $user = $event->users()->where('user_id',$user_id)->get()->first();
+        if(count($user))
+        {
+            $user->pivot->status = $status;
+            $user->pivot->save();
+//            Send email to user confirming his rejection
+            $message = 'You have rejected the invitation';
+            \Mail::to($user)->send(new Email($message));
+        }
+        else
+        {
+            return response("Not invited to event",403);
+        }
+    }
+
 }

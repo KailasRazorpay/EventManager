@@ -129,7 +129,7 @@ class EventsController extends Controller
      */
 
 //    Allow owner or admin to delete event (Should be used only if no one has been invited yet)
-    public function destroy($id)
+    public function cancel($id)
     {
         //
         $event = Event::findOrFail($id);
@@ -145,6 +145,24 @@ class EventsController extends Controller
         $message = 'You have deleted an event';
         $user = User::findOrFail(auth()->id());
         \Mail::to($user)->send(new Email($message));
+    }
+
+//    Allow event owner to cancel event and then notify all invitees and invitation statuses
+    public function destroy($id)
+    {
+//        $id = $request->id;
+        $event = Event::findOrFail($id);
+        $this->authorize('update',$event);
+        $statuses = Status::all()->where('event_id',$event->id);
+        foreach($statuses as $status)
+        {
+            $status->status = 3;
+            $status->save();
+            $user = User::find($status->user_id);
+//            Send email to invitees informing of cancellation of event
+            $message = 'Your event has been cancelled';
+            \Mail::to($user)->send(new Email($message));
+        }
     }
 
 //    Allow admin or owner of event to view event invitees
@@ -173,20 +191,5 @@ class EventsController extends Controller
 
     }
 
-//    Allow event owner to cancel event and then notify all invitees and invitation statuses
-    public function cancel($id)
-    {
-        $event = Event::findOrFail($id);
-        $this->authorize('update',$event);
-        $statuses = Status::all()->where('event_id',$event->id);
-        foreach($statuses as $status)
-        {
-            $status->status = 3;
-            $status->save();
-            $user = User::find($status->user_id);
-//            Send email to invitee informing of cancellation of event
-            $message = 'Your event has been cancelled';
-            \Mail::to($user)->send(new Email($message));
-        }
-    }
+
 }
